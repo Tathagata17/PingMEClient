@@ -8,9 +8,11 @@ import CreateNewChat from "../Components/CreateNewChat";
 import UserAddBox from "../Components/UserAddBox";
 import UserList from "../Components/UserList";
 import { HamburgerIcon, Menu } from "lucide-react";
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5000", { autoConnect: true });
 
 function Chats() {
-  
   const users = [
     // {
     //   id: 1,
@@ -35,9 +37,10 @@ function Chats() {
   const [userlist, setuserList] = useState(users);
   const [modal, setModal] = useState(false);
   const [client, setClient] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   const ME = localStorage.getItem("ME");
-  console.log("User",ME)
+  console.log("User", ME);
 
   // Store messages per user
   const [messages, setMessages] = useState({});
@@ -49,6 +52,14 @@ function Chats() {
     scrollbarWidth: "none",
     msOverflowStyle: "none",
   };
+
+  useEffect(() => {
+    socket.emit("user-online", ME);
+
+    socket.on("online-users", (users) => {
+      setOnlineUsers(users);
+    });
+  }, []);
 
   // Scroll to bottom when selected user messages change
   useEffect(() => {
@@ -97,7 +108,10 @@ function Chats() {
     // Save message per user
     setMessages((prev) => ({
       ...prev,
-      [selectedUser.friendsPhone]: [...(prev[selectedUser.friendsPhone] || []), newMessage],
+      [selectedUser.friendsPhone]: [
+        ...(prev[selectedUser.friendsPhone] || []),
+        newMessage,
+      ],
     }));
 
     const Userdata = {
@@ -134,7 +148,14 @@ function Chats() {
   };
 
   useEffect(() => {
-    
+    const url =
+      "wss://d04b05dc6ca048939b82f25fdb9e85d8.s1.eu.hivemq.cloud:8884/mqtt";
+    const options = {
+      username: "hivemq.webclient.1755407094330",
+      password: "h0V2.QC$#i5bnMdt7&DO",
+      clean: true,
+      reconnectPeriod: 1000,
+    };
 
     const mqttClient = mqtt.connect(url, options);
     setClient(mqttClient);
@@ -173,12 +194,22 @@ function Chats() {
           <>
             {/* Chat Header */}
             <div className="flex flex-row bg-[#2F4F2F] text-[#FFFDD0]  items-center gap-4 flex-shrink-0 shadow-md p-3 text-2xl font-semibold justify-between">
-            <div>
-              {selectedUser.name}
-            </div>
-            <div >
-              <Menu/>
-            </div>
+              <div className="flex flex-col">
+                {selectedUser.name}
+                <p className="text-sm flex items-center justify-center gap-2">
+                  {onlineUsers.includes(selectedUser?.friendsPhone) ? (
+                    <>
+                      <span>Online</span>
+                      <span className="bg-green-500 rounded-full w-3 h-3 inline-block"></span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Offline</span>
+                      <span className="bg-gray-400 rounded-full w-3 h-3 inline-block"></span>
+                    </>
+                  )}
+                </p>
+              </div>
             </div>
 
             {/* Chat Messages */}
@@ -187,16 +218,18 @@ function Chats() {
                 className="flex-1 overflow-y-auto mb-1 p-1 bg-[#dcf7ba] shadow-inner"
                 style={hideScrollbarStyle}
               >
-                {(messages[selectedUser.friendsPhone] || []).map((chat, index) => (
-                  <ChatText
-                    key={index}
-                    text={chat.text}
-                    sender={chat.sender}
-                    timestamp={chat.timestamp}
-                    user={ME}
-                    username={selectedUser.name}
-                  />
-                ))}
+                {(messages[selectedUser.friendsPhone] || []).map(
+                  (chat, index) => (
+                    <ChatText
+                      key={index}
+                      text={chat.text}
+                      sender={chat.sender}
+                      timestamp={chat.timestamp}
+                      user={ME}
+                      username={selectedUser.name}
+                    />
+                  )
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
