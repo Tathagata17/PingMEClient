@@ -40,7 +40,7 @@ function UserAddBox({ onClose, setuserList }) {
       <div className="bg-white rounded-xl w-1/3 p-6 flex flex-col items-center relative shadow-lg">
         {/* Close button */}
         <button
-          className="absolute top-3 right-3 text-gray-600 hover:text-gray-900"
+          className="absolute top-3 right-3 text-gray-600 hover:text-gray-900 rounded-none"
           onClick={onClose}
         >
           <X size={20} />
@@ -68,6 +68,7 @@ function UserAddBox({ onClose, setuserList }) {
           type="submit"
           onClick={(e) => {
             addUser(friendPhone, friendName);
+            onClose();
           }}
           className="w-full py-2 bg-[#93C572] text-[#FFFDD0] font-semibold rounded-lg hover:bg-green-700 transition-all"
         >
